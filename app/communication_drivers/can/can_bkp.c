@@ -58,6 +58,8 @@ volatile bool g_bRXFlag3 = 0;
 
 volatile bool g_bErrFlag = 0;
 
+volatile unsigned long id = 0;
+
 volatile uint8_t g_can_reset_flag[NUM_MAX_IIB_BOARDS] = {1};
 
 tCANMsgObject tx_message_reset_udc;
@@ -126,9 +128,15 @@ void can_int_handler(void)
         // message object 1, and the message RX is complete.
         // Clear the message object interrupt.
 
+        g_bRXFlag1 = 1;
+
         CANIntClear(CAN0_BASE, MESSAGE_DATA_IIB_OBJ_ID);
 
-        g_bRXFlag1 = 1;
+        CANMessageGet(CAN0_BASE, MESSAGE_DATA_IIB_OBJ_ID, &rx_message_data_iib, 1);
+
+        id = rx_message_data_iib.ulMsgID;
+
+        rx_message_data_iib.pucMsgData = message_data_iib;
 
         // Indicate new message object 1 that needs to be processed
         TaskSetNew(PROCESS_CAN_MESSAGE);
@@ -250,27 +258,27 @@ void init_can_bkp(void)
     // allocation of the vector table, then you must also call CANIntRegister()
     // here.
 
-    CANIntEnable(CAN0_BASE, CAN_INT_MASTER | CAN_INT_ERROR | CAN_INT_STATUS);
-
     CANIntRegister(CAN0_BASE, 0, &can_int_handler);
 
+    CANIntEnable(CAN0_BASE, CAN_INT_MASTER | CAN_INT_ERROR | CAN_INT_STATUS);
+
     // Disable auto-retry if no ACK-bit is received by the CAN controller.
-    CANRetrySet(CAN0_BASE, 0);
+    CANRetrySet(CAN0_BASE, 1);
 
     // Enable the CAN for operation.
     CANEnable(CAN0_BASE);
 
     //message object 1
-    rx_message_data_iib.ulMsgID           = MESSAGE_DATA_IIB_ID;
-    rx_message_data_iib.ulMsgIDMask       = 0xfffff;
-    rx_message_data_iib.ulFlags           = (MSG_OBJ_RX_INT_ENABLE | MSG_OBJ_USE_ID_FILTER | MSG_OBJ_FIFO);
+    rx_message_data_iib.ulMsgID           = 0x008;
+    rx_message_data_iib.ulMsgIDMask       = 0x008;
+    rx_message_data_iib.ulFlags           = (MSG_OBJ_USE_ID_FILTER | MSG_OBJ_FIFO | MSG_OBJ_RX_INT_ENABLE);
     rx_message_data_iib.ulMsgLen          = MESSAGE_DATA_IIB_LEN;
 
     CANMessageSet(CAN0_BASE, MESSAGE_DATA_IIB_OBJ_ID, &rx_message_data_iib, MSG_OBJ_TYPE_RX);
 
     //message object 2
     rx_message_itlk_iib.ulMsgID           = MESSAGE_ITLK_IIB_ID;
-    rx_message_itlk_iib.ulMsgIDMask       = 0xfffff;
+    rx_message_itlk_iib.ulMsgIDMask       = 0x7ff;
     rx_message_itlk_iib.ulFlags           = (MSG_OBJ_RX_INT_ENABLE | MSG_OBJ_USE_ID_FILTER | MSG_OBJ_FIFO);
     rx_message_itlk_iib.ulMsgLen          = MESSAGE_ITLK_IIB_LEN;
 
@@ -278,7 +286,7 @@ void init_can_bkp(void)
 
     //message object 3
     rx_message_alarm_iib.ulMsgID          = MESSAGE_ALARM_IIB_ID;
-    rx_message_alarm_iib.ulMsgIDMask      = 0xfffff;
+    rx_message_alarm_iib.ulMsgIDMask      = 0x7ff;
     rx_message_alarm_iib.ulFlags          = (MSG_OBJ_RX_INT_ENABLE | MSG_OBJ_USE_ID_FILTER | MSG_OBJ_FIFO);
     rx_message_alarm_iib.ulMsgLen         = MESSAGE_ALARM_IIB_LEN;
 
@@ -286,7 +294,7 @@ void init_can_bkp(void)
 
     //message object 4
     rx_message_param_iib.ulMsgID          = MESSAGE_PARAM_IIB_ID;
-    rx_message_param_iib.ulMsgIDMask      = 0xfffff;
+    rx_message_param_iib.ulMsgIDMask      = 0x7ff;
     rx_message_param_iib.ulFlags          = (MSG_OBJ_RX_INT_ENABLE | MSG_OBJ_USE_ID_FILTER | MSG_OBJ_FIFO);
     rx_message_param_iib.ulMsgLen         = MESSAGE_PARAM_IIB_LEN;
 
@@ -296,14 +304,15 @@ void init_can_bkp(void)
     tx_message_reset_udc.ulMsgID          = MESSAGE_RESET_UDC_ID;
     tx_message_reset_udc.ulMsgIDMask      = 0;
     tx_message_reset_udc.ulFlags          = (MSG_OBJ_TX_INT_ENABLE | MSG_OBJ_FIFO);
-    tx_message_reset_udc.ulMsgLen         = MESSAGE_RESET_UDC_LEN;
+    tx_message_reset_udc.ulMsgLen         = sizeof(message_reset_udc);
+    tx_message_reset_udc.pucMsgData       = message_reset_udc;
 
     //message object 6
     tx_message_param_udc.ulMsgID         = MESSAGE_PARAM_UDC_ID;
     tx_message_param_udc.ulMsgIDMask     = 0;
     tx_message_param_udc.ulFlags         = (MSG_OBJ_TX_INT_ENABLE | MSG_OBJ_FIFO);
-    tx_message_param_udc.ulMsgLen        = MESSAGE_PARAM_UDC_LEN;
-
+    tx_message_param_udc.ulMsgLen        = sizeof(message_param_udc);
+    tx_message_param_udc.pucMsgData      = message_param_udc;
 }
 
 void send_reset_iib_message(uint8_t iib_address)
@@ -319,11 +328,15 @@ void send_reset_iib_message(uint8_t iib_address)
 
 void get_data_from_iib(void)
 {
-    rx_message_data_iib.pucMsgData = message_data_iib;
+    //id = rx_message_data_iib.ulMsgID;
 
-    CANMessageGet(CAN0_BASE, MESSAGE_DATA_IIB_OBJ_ID, &rx_message_data_iib, 0);
+    //rx_message_data_iib.pucMsgData = message_data_iib;
 
-    g_iib_module_can_data.handle_can_data_message(message_data_iib);
+    //CANMessageGet(CAN0_BASE, MESSAGE_DATA_IIB_OBJ_ID, &rx_message_data_iib, 0);
+
+    g_iib_module_can_data.handle_can_data_message(message_data_iib, id);
+
+    //id = 0;
 }
 
 void get_interlock_from_iib(void)

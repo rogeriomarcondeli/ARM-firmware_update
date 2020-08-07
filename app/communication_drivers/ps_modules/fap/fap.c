@@ -96,7 +96,7 @@ static volatile iib_fap_module_t iib_fap;
 
 static void init_iib();
 
-static void handle_can_data(uint8_t *data);
+static void handle_can_data(uint8_t *data, unsigned long id);
 static void handle_can_interlock(uint8_t *data);
 static void handle_can_alarm(uint8_t *data);
 
@@ -200,82 +200,45 @@ static void init_iib()
     init_iib_module_can_alarm(&g_iib_module_can_alarm, &handle_can_alarm);
 }
 
-static void handle_can_data(uint8_t *data)
+static void handle_can_data(uint8_t *data, unsigned long id)
 {
-    switch(data[1])
+    switch(id)
     {
-        case 0:
+        case 11:
         {
-            memcpy(iib_fap.Vin.u8, &data[4], 4);
-            break;
-        }
-        case 1:
-        {
+            memcpy(iib_fap.Vin.u8, &data[0], 4);
             memcpy(iib_fap.Vout.u8, &data[4], 4);
             V_LOAD.f = iib_fap.Vout.f;
             break;
         }
-        case 2:
-        {
-            memcpy(iib_fap.IoutA1.u8, &data[4], 4);
-            break;
-        }
-        case 3:
-        {
-            memcpy(iib_fap.IoutA2.u8, &data[4], 4);
-            break;
-        }
-        case 4:
-        {
-            memcpy(iib_fap.TempIGBT1.u8, &data[4], 4);
-            break;
-        }
-        case 5:
-        {
-            memcpy(iib_fap.TempIGBT2.u8, &data[4], 4);
-            break;
-        }
-        case 6:
-        {
-            memcpy(iib_fap.DriverVoltage.u8, &data[4], 4);
-            break;
-        }
-        case 7:
-        {
-            memcpy(iib_fap.Driver1Current.u8, &data[4], 4);
-            break;
-        }
-        case 8:
-        {
-            memcpy(iib_fap.Driver2Current.u8, &data[4], 4);
-            break;
-        }
-        case 9:
-        {
-            memcpy(iib_fap.TempL.u8, &data[4], 4);
-            break;
-        }
-        case 10:
-        {
-            memcpy(iib_fap.TempHeatSink.u8, &data[4], 4);
-            break;
-        }
-        case 11:
-        {
-            memcpy(iib_fap.GroundLeakage.u8, &data[4], 4);
-            break;
-        }
         case 12:
         {
-            memcpy(iib_fap.BoardTemperature.u8, &data[4], 4);
+            memcpy(iib_fap.IoutA1.u8, &data[0], 4);
+            memcpy(iib_fap.IoutA2.u8, &data[4], 4);
             break;
         }
         case 13:
         {
-            memcpy(iib_fap.RelativeHumidity.u8, &data[4], 4);
+            memcpy(iib_fap.DriverVoltage.u8, &data[0], 4);
+            memcpy(iib_fap.GroundLeakage.u8, &data[4], 4);
             break;
         }
-
+        case 14:
+        {
+            memcpy(iib_fap.Driver1Current.u8, &data[0], 4);
+            memcpy(iib_fap.Driver2Current.u8, &data[4], 4);
+            break;
+        }
+        case 15:
+        {
+            memcpy(iib_fap.TempIGBT1.u8, &data[0], 1);
+            memcpy(iib_fap.TempIGBT2.u8, &data[1], 1);
+            memcpy(iib_fap.TempL.u8, &data[2], 1);
+            memcpy(iib_fap.TempHeatSink.u8, &data[3], 1);
+            memcpy(iib_fap.BoardTemperature.u8, &data[4], 1);
+            memcpy(iib_fap.RelativeHumidity.u8, &data[5], 1);
+            break;
+        }
         default:
         {
             break;

@@ -29,7 +29,7 @@ iib_module_t g_iib_module_can_alarm;
 
 
 void init_iib_module_can_data(iib_module_t *iib_module_can_data,
-                              void (*handle_can_data_message) (uint8_t*))
+                              void (*handle_can_data_message) (uint8_t*, unsigned long))
 {
     iib_module_can_data->handle_can_data_message                = handle_can_data_message;
 }

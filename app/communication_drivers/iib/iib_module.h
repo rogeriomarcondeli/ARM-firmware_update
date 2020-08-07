@@ -25,7 +25,7 @@
 #include <stdint.h>
 
 typedef struct {
-    void (*handle_can_data_message) (uint8_t*);
+    void (*handle_can_data_message) (uint8_t*, unsigned long);
     void (*handle_can_interlock_message) (uint8_t*);
     void (*handle_can_alarm_message) (uint8_t*);
 } iib_module_t;
@@ -37,7 +37,7 @@ extern iib_module_t g_iib_module_can_interlock;
 extern iib_module_t g_iib_module_can_alarm;
 
 extern void init_iib_module_can_data(iib_module_t *iib_module_can_data,
-                                     void (*handle_can_data_message) (uint8_t*));
+                                     void (*handle_can_data_message) (uint8_t*, unsigned long));
 
 extern void init_iib_module_can_interlock(iib_module_t *iib_module_can_interlock,
                                           void (*handle_can_interlock_message) (uint8_t*));
